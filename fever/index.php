@@ -197,7 +197,7 @@ route('links', function() {
     }
 
     response($response);
-});=&since_id=2900
+});
 
 // Call: ?api&unread_item_ids
 route('unread_item_ids', function() {
