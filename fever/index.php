@@ -149,6 +149,8 @@ route('items', function() {
                             'status',
                             'bookmark'
                         );
+        // Do not send removed/pruned item(s) to client
+        $query->neq('status', 'removed');
 
         if (isset($_GET['since_id']) && is_numeric($_GET['since_id'])) {
 
@@ -195,7 +197,7 @@ route('links', function() {
     }
 
     response($response);
-});
+});=&since_id=2900
 
 // Call: ?api&unread_item_ids
 route('unread_item_ids', function() {
