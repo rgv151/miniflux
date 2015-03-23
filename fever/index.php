@@ -125,7 +125,6 @@ route('favicons', function() {
 
         $query = Database::get('db')
             ->table('favicons')
-            ->limit(50)
             ->columns(
                 'feed_id',
                 'icon'
