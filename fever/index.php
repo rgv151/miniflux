@@ -94,7 +94,7 @@ route('feeds', function() {
         foreach ($feeds as $feed) {
             $response['feeds'][] = array(
                 'id' => (int) $feed['id'],
-                'favicon_id' => 1,
+                'favicon_id' => (int) $feed['id'],
                 'title' => $feed['title'],
                 'url' => $feed['feed_url'],
                 'site_url' => $feed['site_url'],
@@ -122,7 +122,23 @@ route('favicons', function() {
     $response = auth();
 
     if ($response['auth']) {
+
+        $query = Database::get('db')
+            ->table('favicons')
+            ->limit(50)
+            ->columns(
+                'feed_id',
+                'icon'
+            );
+        $favicons = $query->findAll();
+
         $response['favicons'] = array();
+        foreach ($favicons as $favicon) {
+            $response['favicons'][] = array(
+                'id' => (int) $favicon['feed_id'],
+                'data' => $favicon['icon']
+            );
+        }
     }
 
     response($response);
