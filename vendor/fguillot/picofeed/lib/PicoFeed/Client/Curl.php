@@ -34,7 +34,7 @@ class Curl extends Client
      * @access private
      * @var array
      */
-    private $headers = array();
+    private $response_headers = array();
 
     /**
      * Counter on the number of header received
@@ -42,7 +42,7 @@ class Curl extends Client
      * @access private
      * @var integer
      */
-    private $headers_counter = 0;
+    private $response_headers_count = 0;
 
     /**
      * cURL callback to read the HTTP body
@@ -80,16 +80,16 @@ class Curl extends Client
     {
         $length = strlen($buffer);
 
-        if ($buffer === "\r\n") {
-            $this->headers_counter++;
+        if ($buffer === "\r\n" || $buffer === "\n") {
+            $this->response_headers_count++;
         }
         else {
 
-            if (! isset($this->headers[$this->headers_counter])) {
-                $this->headers[$this->headers_counter] = '';
+            if (! isset($this->response_headers[$this->response_headers_count])) {
+                $this->response_headers[$this->response_headers_count] = '';
             }
 
-            $this->headers[$this->headers_counter] .= $buffer;
+            $this->response_headers[$this->response_headers_count] .= $buffer;
         }
 
         return $length;
@@ -153,6 +153,8 @@ class Curl extends Client
             $headers[] = 'If-Modified-Since: '.$this->last_modified;
         }
 
+        $headers = array_merge($headers, $this->request_headers);
+
         return $headers;
     }
 
@@ -160,6 +162,7 @@ class Curl extends Client
      * Prepare curl proxy context
      *
      * @access private
+     * @param  resource $ch
      * @return resource $ch
      */
     private function prepareProxyContext($ch)
@@ -188,6 +191,7 @@ class Curl extends Client
      * Prepare curl auth context
      *
      * @access private
+     * @param  resource $ch
      * @return resource $ch
      */
     private function prepareAuthContext($ch)
@@ -203,6 +207,7 @@ class Curl extends Client
      * Set write/header functions
      *
      * @access private
+     * @param  resource $ch
      * @return resource $ch
      */
     private function prepareDownloadMode($ch)
@@ -234,6 +239,7 @@ class Curl extends Client
 
         curl_setopt($ch, CURLOPT_URL, $this->url);
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->timeout);
         curl_setopt($ch, CURLOPT_USERAGENT, $this->user_agent);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $this->prepareHeaders());
@@ -302,7 +308,7 @@ class Curl extends Client
     {
         $this->executeContext();
 
-        list($status, $headers) = HttpHeaders::parse(explode("\r\n", $this->headers[$this->headers_counter - 1]));
+        list($status, $headers) = HttpHeaders::parse(explode("\n", $this->response_headers[$this->response_headers_count - 1]));
 
         // When restricted with open_basedir
         if ($this->needToHandleRedirection($follow_location, $status)) {
@@ -343,8 +349,8 @@ class Curl extends Client
         $this->url = Url::resolve($location, $this->url);
         $this->body = '';
         $this->body_length = 0;
-        $this->headers = array();
-        $this->headers_counter = 0;
+        $this->response_headers = array();
+        $this->response_headers_count = 0;
 
         while (true) {
 
@@ -360,8 +366,8 @@ class Curl extends Client
                 $this->url = Url::resolve($result['headers']['Location'], $this->url);
                 $this->body = '';
                 $this->body_length = 0;
-                $this->headers = array();
-                $this->headers_counter = 0;
+                $this->response_headers = array();
+                $this->response_headers_count = 0;
             }
             else {
                 break;

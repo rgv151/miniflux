@@ -32,18 +32,18 @@ Router\get_action('edit-feed', function() {
 Router\post_action('edit-feed', function() {
 
     $values = Request\values();
+    $values += array('enabled' => 0, 'download_content' => 0, 'rtl' => 0, 'cloak_referrer' => 0);
+
     list($valid, $errors) = Model\Feed\validate_modification($values);
 
     if ($valid) {
-
         if (Model\Feed\update($values)) {
             Session\flash(t('Your subscription has been updated.'));
+            Response\redirect('?action=feeds');
         }
         else {
             Session\flash_error(t('Unable to edit your subscription.'));
         }
-
-        Response\redirect('?action=feeds');
     }
 
     Response\html(Template\layout('edit_feed', array(
@@ -129,10 +129,10 @@ Router\get_action('feeds', function() {
 // Display form to add one feed
 Router\get_action('add', function() {
 
+    $values = array('download_content' => 0, 'rtl' => 0, 'cloak_referrer' => 0);
+
     Response\html(Template\layout('add', array(
-        'values' => array(
-            'csrf' => Model\Config\generate_csrf(),
-        ),
+        'values' => $values + array('csrf' => Model\Config\generate_csrf()),
         'errors' => array(),
         'nb_unread_items' => Model\Item\count_by_status('unread'),
         'menu' => 'feeds',
@@ -158,23 +158,57 @@ Router\action('subscribe', function() {
         }
     }
 
-    $values += array('download_content' => 0, 'rtl' => 0, 'cloak_referrer' => 0);
-    $url = trim($url);
-    $feed_id = Model\Feed\create($url, $values['download_content'], $values['rtl'], $values['cloak_referrer']);
+    $values += array('url' => trim($url), 'download_content' => 0, 'rtl' => 0, 'cloak_referrer' => 0);
 
-    if ($feed_id) {
+    try {
+        $feed_id = Model\Feed\create($values['url'], $values['download_content'], $values['rtl'], $values['cloak_referrer']);
+    }
+    catch (UnexpectedValueException $e) {
+        $error_message = t('This subscription already exists.');
+    }
+    catch (PicoFeed\Client\InvalidCertificateException $e) {
+        $error_message = t('Invalid SSL certificate.');
+    }
+    catch (PicoFeed\Client\InvalidUrlException $e) {
+        // picoFeed uses this exception for multiple reasons, but doesn't
+        // provide an exception code to distinguish what exactly happend here
+        $error_message = $e->getMessage();
+    }
+    catch (PicoFeed\Client\MaxRedirectException $e) {
+        $error_message = t('Maximum number of HTTP redirections exceeded.');
+    }
+    catch (PicoFeed\Client\MaxSizeException $e) {
+        $error_message = t('The content size exceeds to maximum allowed size.');
+    }
+    catch (PicoFeed\Client\TimeoutException $e) {
+        $error_message = t('Connection timeout.');
+    }
+    catch (PicoFeed\Parser\MalformedXmlException $e) {
+        $error_message = t('Feed is malformed.');
+    }
+    catch (PicoFeed\Reader\SubscriptionNotFoundException $e) {
+        $error_message = t('Unable to find a subscription.');
+    }
+    catch (PicoFeed\Reader\UnsupportedFeedFormatException $e) {
+        $error_message = t('Unable to detect the feed format.');
+    }
+
+    Model\Config\write_debug();
+
+    if (isset($feed_id) && $feed_id !== false) {
         Session\flash(t('Subscription added successfully.'));
         Response\redirect('?action=feed-items&feed_id='.$feed_id);
     }
     else {
-        Session\flash_error(t('Unable to find a subscription.'));
+        if (! isset($error_message)) {
+            $error_message = t('Error occured.');
+        }
+
+        Session\flash_error($error_message);
     }
 
     Response\html(Template\layout('add', array(
-        'values' => array(
-            'url' => $url,
-            'csrf' => Model\Config\generate_csrf(),
-        ),
+        'values' => $values + array('csrf' => Model\Config\generate_csrf()),
         'nb_unread_items' => Model\Item\count_by_status('unread'),
         'menu' => 'feeds',
         'title' => t('Subscriptions')

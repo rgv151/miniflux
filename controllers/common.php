@@ -50,11 +50,16 @@ Router\before(function($action) {
         'media-src' => '*',
         'img-src' => '*',
         'frame-src' => Model\Config\get_iframe_whitelist(),
+        'referrer' => 'no-referrer',
     ));
 
     Response\xframe();
     Response\xss();
     Response\nosniff();
+
+    if (ENABLE_HSTS && Helper\is_secure_connection()) {
+        Response\hsts();
+    }
 });
 
 // Show help

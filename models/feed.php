@@ -2,6 +2,7 @@
 
 namespace Model\Feed;
 
+use UnexpectedValueException;
 use Model\Config;
 use Model\Item;
 use SimpleValidator\Validator;
@@ -99,10 +100,10 @@ function update(array $values)
                 'title' => $values['title'],
                 'site_url' => $values['site_url'],
                 'feed_url' => $values['feed_url'],
-                'enabled' => empty($values['enabled']) ? 0 : $values['enabled'],
-                'rtl' => empty($values['rtl']) ? 0 : $values['rtl'],
-                'download_content' => empty($values['download_content']) ? 0 : $values['download_content'],
-                'cloak_referrer' => empty($values['cloak_referrer']) ? 0 : $values['cloak_referrer'],
+                'enabled' => $values['enabled'],
+                'rtl' => $values['rtl'],
+                'download_content' => $values['download_content'],
+                'cloak_referrer' => $values['cloak_referrer'],
             ));
 }
 
@@ -151,60 +152,53 @@ function import_opml($content)
 // Add a new feed from an URL
 function create($url, $enable_grabber = false, $force_rtl = false, $cloak_referrer = false)
 {
-    try {
-        $db = Database::get('db');
+    $feed_id = false;
 
-        // Discover the feed
-        $reader = new Reader(Config\get_reader_config());
-        $resource = $reader->discover($url);
+    $db = Database::get('db');
 
-        // Feed already there
-        if ($db->table('feeds')->eq('feed_url', $resource->getUrl())->count()) {
-            return false;
-        }
+    // Discover the feed
+    $reader = new Reader(Config\get_reader_config());
+    $resource = $reader->discover($url);
 
-        // Parse the feed
-        $parser = $reader->getParser(
-            $resource->getUrl(),
-            $resource->getContent(),
-            $resource->getEncoding()
-        );
-
-        if ($enable_grabber) {
-            $parser->enableContentGrabber();
-        }
-
-        $feed = $parser->execute();
-
-        // Save the feed
-        $result = $db->table('feeds')->save(array(
-            'title' => $feed->getTitle(),
-            'site_url' => $feed->getSiteUrl(),
-            'feed_url' => $feed->getFeedUrl(),
-            'download_content' => $enable_grabber ? 1 : 0,
-            'rtl' => $force_rtl ? 1 : 0,
-            'last_modified' => $resource->getLastModified(),
-            'last_checked' => time(),
-            'etag' => $resource->getEtag(),
-            'cloak_referrer' => $cloak_referrer ? 1 : 0,
-        ));
-
-        if ($result) {
-
-            $feed_id = $db->getConnection()->getLastId();
-
-            Item\update_all($feed_id, $feed->getItems());
-            fetch_favicon($feed_id, $feed->getSiteUrl(), $feed->getIcon());
-
-            Config\write_debug();
-
-            return (int) $feed_id;
-        }
+    // Feed already there
+    if ($db->table('feeds')->eq('feed_url', $resource->getUrl())->count()) {
+        throw new UnexpectedValueException;
     }
-    catch (PicoFeedException $e) {}
 
-    Config\write_debug();
-    return false;
+    // Parse the feed
+    $parser = $reader->getParser(
+        $resource->getUrl(),
+        $resource->getContent(),
+        $resource->getEncoding()
+    );
+
+    if ($enable_grabber) {
+        $parser->enableContentGrabber();
+    }
+
+    $feed = $parser->execute();
+
+    // Save the feed
+    $result = $db->table('feeds')->save(array(
+        'title' => $feed->getTitle(),
+        'site_url' => $feed->getSiteUrl(),
+        'feed_url' => $feed->getFeedUrl(),
+        'download_content' => $enable_grabber ? 1 : 0,
+        'rtl' => $force_rtl ? 1 : 0,
+        'last_modified' => $resource->getLastModified(),
+        'last_checked' => time(),
+        'etag' => $resource->getEtag(),
+        'cloak_referrer' => $cloak_referrer ? 1 : 0,
+    ));
+
+    if ($result) {
+        $feed_id = $db->getConnection()->getLastId();
+
+        Item\update_all($feed_id, $feed->getItems());
+        fetch_favicon($feed_id, $feed->getSiteUrl(), $feed->getIcon());
+    }
+
+    return $feed_id;
 }
 
 // Refresh all feeds

@@ -21,7 +21,9 @@ function get_reader_config()
     // Client
     $config->setClientTimeout(HTTP_TIMEOUT);
     $config->setClientUserAgent(HTTP_USER_AGENT);
-    $config->setGrabberUserAgent(HTTP_USER_AGENT);
+
+    // Grabber
+    $config->setGrabberRulesFolder(RULES_DIRECTORY);
 
     // Proxy
     $config->setProxyHostname(PROXY_HOSTNAME);
@@ -101,6 +103,7 @@ function get_languages()
         'zh_CN' => '简体中国',
         'sr_RS' => 'српски',
         'sr_RS@latin' => 'srpski',
+        'ru_RU' => 'Русский',
     );
 }
 

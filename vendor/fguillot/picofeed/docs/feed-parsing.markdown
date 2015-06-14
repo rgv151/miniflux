@@ -176,6 +176,65 @@ catch (PicoFeedException $e) {
 }
 ```
 
+HTTP basic auth
+---------------
+If a feed requires basic auth headers, you can pass them as parameters to the **download** method, e.g.:
+
+```php
+try {
+    $reader = new Reader;
+
+    $user = 'john';
+    $password = 'doe';
+
+    // Provide those values to the download method
+    $resource = $reader->download('http://linuxfr.org/news.atom', '', '', $user, $password);
+
+    // Return true if the remote content has changed
+    if ($resource->isModified()) {
+
+        $parser = $reader->getParser(
+            $resource->getUrl(),
+            $resource->getContent(),
+            $resource->getEncoding()
+        );
+
+        $feed = $parser->execute();
+
+        // Save your feed in your database
+        // ...
+
+    }
+    else {
+
+        echo 'Not modified, nothing to do!';
+    }
+}
+catch (PicoFeedException $e) {
+    // Do something...
+}
+```
+
+Custom regex filters
+--------------------
+In case you want modify the content with a simple regex, you can create a rule file named after the domain of the feed's link attribute. For the feed pointing to **http://www.twogag.com/** the file is stored under **Rules/twogag.com.php**
+
+For filtering, only the array with the key **filter** will be considered. The first level key is a preg_match regex that will match the sub url, e.g. to only match a feed whose link attribute points to **twogag.com/test**, the regex could look like **%/test.*%**. The second level array contains a list of search and replace strings, which will be passed to the preg\_replace function. The first string is the argument that should be matched, the second is the replacement.
+
+To replace all occurences of links to smaller images for twogag, the following rule can be used:
+
+
+```php
+<?php
+return array(
+    'filter' => array(
+        '%.*%' => array(
+            "%http://www.twogag.com/comics-rss/([^.]+)\\.jpg%" =>
+            "http://www.twogag.com/comics/$1.jpg"
+        )
+    )
+);
+```
 
 Feed and item properties
 ------------------------
@@ -203,6 +262,45 @@ $feed->items[0]->getEnclosureUrl();            // Enclosure url
 $feed->items[0]->getEnclosureType();           // Enclosure mime-type (audio/mp3, image/png...)
 $feed->items[0]->getContent();                 // Item content (filtered or raw)
 $feed->items[0]->isRTL();                      // Return true if the item language is Right-To-Left
+```
+
+Get raw XML tags/attributes or non standard tags for items
+----------------------------------------------------------
+
+Get the original `guid` tag for RSS 2.0 feeds:
+
+```php
+echo $feed->items[0]->getTag('guid');
+```
+
+Get a specific attribute value:
+
+```php
+echo $feed->items[1]->getTag('category', 'term');
+```
+
+Get value of namespaced tag:
+
+```php
+echo $feed->items[1]->getTag('wfw:commentRss');
+```
+
+Get attribute value of a namespaced tag:
+
+```php
+echo $feed->items[0]->getTag('media:content', 'url');
+```
+
+Get the xml of the item (returns a SimpleXMLElement instance):
+
+```php
+$simplexml = $feed->items[0]->xml;
+```
+
+Get the list of namespaces:
+
+```php
+print_r($feed->items[0]->namespaces);
 ```
 
 RTL language detection

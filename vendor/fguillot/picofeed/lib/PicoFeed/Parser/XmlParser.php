@@ -55,7 +55,9 @@ class XmlParser
      */
     private static function scanInput($input, Closure $callback)
     {
-        if (substr(php_sapi_name(), 0, 3) === 'fpm') {
+        $isRunningFpm = substr(php_sapi_name(), 0, 3) === 'fpm';
+
+        if ($isRunningFpm) {
 
             // If running with PHP-FPM and an entity is detected we refuse to parse the feed
             // @see https://bugs.php.net/bug.php?id=64938
@@ -64,8 +66,7 @@ class XmlParser
             }
         }
         else {
-
-            libxml_disable_entity_loader(true);
+            $entityLoaderDisabled = libxml_disable_entity_loader(true);
         }
 
         libxml_use_internal_errors(true);
@@ -79,6 +80,10 @@ class XmlParser
                     return false;
                 }
             }
+        }
+
+        if ($isRunningFpm === false) {
+            libxml_disable_entity_loader($entityLoaderDisabled);
         }
 
         return $dom;
@@ -212,21 +217,7 @@ class XmlParser
     }
 
     /**
-     * Extract charset from meta tag
-     *
-     * @static
-     * @access public
-     * @param  string  $data  meta tag content
-     * @return string
-     */
-    public static function findCharset($data)
-    {
-        $result = explode('charset=', $data);
-        return isset($result[1]) ? $result[1] : $data;
-    }
-
-    /**
-     * Get the encoding from a xml tag
+     * Get the charset from a meta tag
      *
      * @static
      * @access public
@@ -237,18 +228,8 @@ class XmlParser
     {
         $encoding = '';
 
-        $dom = static::getHtmlDocument($data);
-        $xpath = new DOMXPath($dom);
-
-        $tags = array(
-            '/html/head/meta[translate(@http-equiv, "CENOPTY", "cenopty")="content-type"]/@content', //HTML4, convert upper to lower-case
-            '/html/head/meta/@charset', //HTML5
-        );
-
-        $nodes = $xpath->query(implode(' | ', $tags));
-
-        foreach ($nodes as $node) {
-            $encoding = static::findCharset($node->nodeValue);
+        if (preg_match('/<meta.*?charset\s*=\s*["\']?\s*([^"\'\s\/>;]+)/i', $data, $match) === 1) {
+            $encoding = strtolower($match[1]);
         }
 
         return $encoding;

@@ -298,23 +298,6 @@ Miniflux.Item = (function() {
             request.open("POST", "?action=download-item&id=" + item_id, true);
             request.send();
         },
-        MarkListingAsRead: function(redirect) {
-            var articles = document.getElementsByTagName("article");
-            var listing = [];
-
-            for (var i = 0, ilen = articles.length; i < ilen; i++) {
-                listing.push(getItemID(articles[i]));
-            }
-
-            var request = new XMLHttpRequest();
-
-            request.onload = function() {
-                window.location.href = redirect;
-            };
-
-            request.open("POST", "?action=mark-items-as-read", true);
-            request.send(JSON.stringify(listing));
-        },
         MarkFeedAsRead: function(feed_id) {
             var request = new XMLHttpRequest();
 

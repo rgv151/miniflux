@@ -91,6 +91,8 @@ table {
     width: 100%;
     border-collapse: collapse;
     border-spacing: 0;
+    /* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=975632 */
+    table-layout: fixed;
 }
 
 table caption {
@@ -158,6 +160,7 @@ label {
 
 input[type="checkbox"] {
     border: 1px solid #ccc;
+    margin-right: 0.5em;
 }
 
 input[type="email"],
@@ -172,6 +175,8 @@ input[type="text"] {
     font-size: 99%;
     margin-bottom: 10px;
     margin-top: 5px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 input[type="email"]:focus,
@@ -283,6 +288,8 @@ textarea.form-error {
 
 /* buttons */
 .btn {
+    -webkit-appearance: none;
+    appearance: none;
     display: inline-block;
     color: #333;
     border: 1px solid #ccc;
@@ -465,6 +472,7 @@ nav .active a {
     visibility: hidden;
 }
 
+/* items listing */
 .items article[data-feed-error] .feed-parsing-error {
     visibility: visible;
     color: #000;
@@ -472,7 +480,6 @@ nav .active a {
     font-weight: normal;
 }
 
-/* items listing */
 .items article {
     border: 1px dotted #ddd;
     margin-bottom: 20px;
@@ -531,6 +538,25 @@ nav .active a {
 
 .items article[data-item-status="read"] h2 a {
     color: #666;
+}
+
+/* item preview full-content */
+.preview-full-content {
+    overflow: auto;
+    margin-bottom: 10px;
+    color: #666;
+}
+
+.preview-full-content p {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.preview-full-content img {
+    max-width: 100%;
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 /* item */

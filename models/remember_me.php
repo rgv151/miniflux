@@ -60,7 +60,7 @@ function authenticate()
             // Update the sequence
             write_cookie(
                 $record['token'],
-                update($record['token'], $record['sequence']),
+                update($record['token']),
                 $record['expiration']
             );
 
@@ -92,26 +92,11 @@ function refresh()
             // Update the sequence
             write_cookie(
                 $record['token'],
-                update($record['token'], $record['sequence']),
+                update($record['token']),
                 $record['expiration']
             );
         }
     }
-}
-
-/**
- * Remove a session record
- *
- * @access public
- * @param  integer  $session_id   Session id
- * @return mixed
- */
-function remove($session_id)
-{
-    return Database::get('db')
-                ->table(TABLE)
-                ->eq('id', $session_id)
-                ->remove();
 }
 
 /**
@@ -191,17 +176,15 @@ function cleanup()
  *
  * @access public
  * @param  string   $token        Session token
- * @param  string   $sequence     Sequence token
  * @return string
  */
-function update($token, $sequence)
+function update($token)
 {
     $new_sequence = Config\generate_token();
 
     Database::get('db')
          ->table(TABLE)
          ->eq('token', $token)
-         ->eq('sequence', $sequence)
          ->update(array('sequence' => $new_sequence));
 
     return $new_sequence;
@@ -231,7 +214,7 @@ function decode_cookie($value)
 {
     @list($database, $token, $sequence) = explode('|', $value);
 
-    if (! DatabaseModel\select(base64_decode($database))) {
+    if (ENABLE_MULTIPLE_DB && ! DatabaseModel\select(base64_decode($database))) {
         return false;
     }
 
@@ -268,7 +251,7 @@ function write_cookie($token, $sequence, $expiration)
         $expiration,
         BASE_URL_DIRECTORY,
         null,
-        ! empty($_SERVER['HTTPS']),
+        \Helper\is_secure_connection(),
         true
     );
 }
@@ -301,7 +284,7 @@ function delete_cookie()
         time() - 3600,
         BASE_URL_DIRECTORY,
         null,
-        ! empty($_SERVER['HTTPS']),
+        \Helper\is_secure_connection(),
         true
     );
 }

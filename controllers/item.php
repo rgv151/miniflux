@@ -3,7 +3,6 @@
 use PicoFarad\Router;
 use PicoFarad\Response;
 use PicoFarad\Request;
-use PicoFarad\Session;
 use PicoFarad\Template;
 
 // Display unread items
@@ -15,7 +14,7 @@ Router\get_action('unread', function() {
     $order = Request\param('order', 'updated');
     $direction = Request\param('direction', Model\Config\get('items_sorting_direction'));
     $offset = Request\int_param('offset', 0);
-    $items = Model\Item\get_all('unread', $offset, Model\Config\get('items_per_page'), $order, $direction);
+    $items = Model\Item\get_all_by_status('unread', $offset, Model\Config\get('items_per_page'), $order, $direction);
     $nb_items = Model\Item\count_by_status('unread');
 
     if ($nb_items === 0) {
@@ -66,13 +65,13 @@ Router\get_action('show', function() {
             break;
     }
 
-    $image_proxy = Model\Config\get('image_proxy');
+    $image_proxy = (bool) Model\Config\get('image_proxy');
 
     // add the image proxy if requested and required
-    $item['content'] = Model\Proxy\addProxyToTags($item['content'], $item['url'], $image_proxy, $feed['cloak_referrer']);
+    $item['content'] = Model\Proxy\rewrite_html($item['content'], $item['url'], $image_proxy, $feed['cloak_referrer']);
 
     if ($image_proxy && strpos($item['enclosure_type'], 'image') === 0) {
-        $item['enclosure'] = Model\Proxy\addProxyToLink($item['enclosure']);
+        $item['enclosure'] = Model\Proxy\rewrite_link($item['enclosure']);
     }
 
     Response\html(Template\layout('show_item', array(
@@ -121,20 +120,9 @@ Router\post_action('download-item', function() {
     $feed = Model\Feed\get($item['feed_id']);
 
     $download = Model\Item\download_content_id($id);
-    $download['content'] = Model\Proxy\addProxyToTags($download['content'], $item['url'], Model\Config\get('image_proxy'), $feed['cloak_referrer']);
+    $download['content'] = Model\Proxy\rewrite_html($download['content'], $item['url'], Model\Config\get('image_proxy'), $feed['cloak_referrer']);
 
     Response\json($download);
-});
-
-// Ajax call change item status
-Router\post_action('change-item-status', function() {
-
-    $id = Request\param('id');
-
-    Response\json(array(
-        'item_id' => $id,
-        'status' => Model\Item\switch_status($id)
-    ));
 });
 
 // Ajax call to mark item read
@@ -159,7 +147,7 @@ Router\post_action('mark-item-unread', function() {
 });
 
 // Mark all unread items as read
-Router\get_action('mark-as-read', function() {
+Router\get_action('mark-all-read', function() {
 
     Model\Item\mark_all_as_read();
     Response\redirect('?action=unread');
@@ -185,13 +173,6 @@ Router\post_action('mark-feed-as-read', function() {
     $nb_items = Model\Item\count_by_status('unread');
 
     Response\raw($nb_items);
-});
-
-// Mark sent items id as read (Ajax request)
-Router\post_action('mark-items-as-read', function(){
-
-    Model\Item\mark_items_as_read(Request\values());
-    Response\json(array('OK'));
 });
 
 // Mark item as read and redirect to the listing page

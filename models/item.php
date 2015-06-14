@@ -6,11 +6,10 @@ use Model\Service;
 use Model\Config;
 use PicoDb\Database;
 use PicoFeed\Logging\Logger;
-use PicoFeed\Client\Grabber;
-use PicoFeed\Filter\Filter;
+use PicoFeed\Scraper\Scraper;
 
 // Get all items without filtering
-function get_everything()
+function get_all()
 {
     return Database::get('db')
         ->table('items')
@@ -37,7 +36,7 @@ function get_everything()
 }
 
 // Get everthing since date (timestamp)
-function get_everything_since($timestamp)
+function get_all_since($timestamp)
 {
     return Database::get('db')
         ->table('items')
@@ -90,7 +89,7 @@ function get_all_status()
 }
 
 // Get all items by status
-function get_all($status, $offset = null, $limit = null, $order_column = 'updated', $order_direction = 'desc')
+function get_all_by_status($status, $offset = null, $limit = null, $order_column = 'updated', $order_direction = 'desc')
 {
     return Database::get('db')
         ->table('items')
@@ -327,37 +326,6 @@ function set_bookmark_value($id, $value)
         ->save(array('bookmark' => $value));
 }
 
-// Swap item status read <-> unread
-function switch_status($id)
-{
-    $item = Database::get('db')
-        ->table('items')
-        ->columns('status')
-        ->eq('id', $id)
-        ->findOne();
-
-    if ($item['status'] == 'unread') {
-
-        Database::get('db')
-            ->table('items')
-            ->eq('id', $id)
-            ->save(array('status' => 'read'));
-
-        return 'read';
-    }
-    else {
-
-        Database::get('db')
-            ->table('items')
-            ->eq('id', $id)
-            ->save(array('status' => 'unread'));
-
-        return 'unread';
-    }
-
-    return '';
-}
-
 // Mark all unread items as read
 function mark_all_as_read()
 {
@@ -375,18 +343,6 @@ function mark_all_as_removed()
         ->eq('status', 'read')
         ->eq('bookmark', 0)
         ->save(array('status' => 'removed', 'content' => ''));
-}
-
-// Mark only specified items as read
-function mark_items_as_read(array $items_id)
-{
-    Database::get('db')->startTransaction();
-
-    foreach ($items_id as $id) {
-        set_read($id);
-    }
-
-    Database::get('db')->closeTransaction();
 }
 
 // Mark all items of a feed as read
@@ -564,12 +520,12 @@ function download_content_url($url)
 {
     $content = '';
 
-    $grabber = new Grabber($url);
-    $grabber->setConfig(Config\get_reader_config());
-    $grabber->download();
+    $grabber = new Scraper(Config\get_reader_config());
+    $grabber->setUrl($url);
+    $grabber->execute();
 
-    if ($grabber->parse()) {
-        $content = $grabber->getFilteredcontent();
+    if ($grabber->hasRelevantContent()) {
+        $content = $grabber->getFilteredContent();
     }
 
     return $content;

@@ -7,14 +7,14 @@ Features
 --------
 
 - Host almost anywhere
-- Readability (CSS optimized for readability, responsive design)
-- Easy setup => copy and paste the source code and you are done!
+- Readability (CSS optimized for readability, responsive design, compatible with mobile and tablet devices)
+- Easy setup => **copy and paste the source code and you are done!**
 - Use a lightweight Sqlite database instead of Mysql or Postgresql
 - Remove Feedburner Ads and analytics trackers (1x1 pixels)
 - Open external links inside a new tab with a `rel="noreferrer"` attribute
 - Use secure HTTP headers (only external images and Youtube/Vimeo/Dailymotion videos are allowed)
 - Article content is filtered before being displayed
-- Translated in English, French, German, Italian, Czech, Spanish, Portuguese, Serbian and Simplified Chinese
+- Translated in Arabic, English, French, German, Italian, Czech, Spanish, Portuguese, Russian, Serbian and Simplified Chinese
 - RTL languages support
 - Keyboard shortcuts
 - Full article download for feeds that display only a summary
@@ -95,6 +95,7 @@ People who sent a pull-request, report a bug, make a new theme or share a super 
 - [Derjus](https://github.com/derjus)
 - [Eauland](https://github.com/eauland)
 - [Félix](https://github.com/dysosmus)
+- [Filimonov Denis](https://github.com/denfil)
 - [Geriel Castro](https://github.com/GerielCastro)
 - [Hika0](https://github.com/hika0)
 - [Horsely](https://github.com/horsley)
@@ -123,5 +124,6 @@ People who sent a pull-request, report a bug, make a new theme or share a super 
 - [Tobi](https://github.com/tobir)
 - Vincent Ozanam
 - [Ygbillet](https://github.com/ygbillet)
+- [小秦](https://github.com/xqin)
 
 Many people also sent bug reports and feature requests.
